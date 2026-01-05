@@ -15,11 +15,13 @@ export async function apiFetch<T>(
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers
+    headers,
   });
 
   const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json") ? await response.json() : null;
+  const payload = contentType.includes("application/json")
+    ? await response.json()
+    : null;
 
   if (!response.ok) {
     const message = payload?.message || response.statusText || "Request failed";
@@ -29,8 +31,12 @@ export async function apiFetch<T>(
   return payload as T;
 }
 
-export function buildQuery(params: Record<string, string | number | undefined | null>) {
-  const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== "");
+export function buildQuery(
+  params: Record<string, string | number | undefined | null>
+) {
+  const entries = Object.entries(params).filter(
+    ([, value]) => value !== undefined && value !== null && value !== ""
+  );
   if (!entries.length) {
     return "";
   }
@@ -38,5 +44,6 @@ export function buildQuery(params: Record<string, string | number | undefined | 
   for (const [key, value] of entries) {
     query.append(key, String(value));
   }
+
   return `?${query.toString()}`;
 }
