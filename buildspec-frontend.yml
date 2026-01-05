@@ -9,8 +9,11 @@ phases:
   build:
     commands:
       - npm -w apps/web run build
-
+  post_build:
+    commands:
+      # Deploy
+      - aws s3 sync apps/web/dist/ s3://inventory-tomas-frontend-eunorth1-2026/ --delete
 artifacts:
   base-directory: apps/web/dist
   files:
-    - '**/*'
+    - "**/*"
