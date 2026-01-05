@@ -44,6 +44,5 @@ export function buildQuery(
   for (const [key, value] of entries) {
     query.append(key, String(value));
   }
-
   return `?${query.toString()}`;
 }
