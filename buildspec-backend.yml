@@ -14,7 +14,7 @@ phases:
       - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REPO_URI}"
   build:
     commands:
-      - docker build -t "${ECR_REPO_URI}:${IMAGE_TAG}" -f "${APP_DIR}/Dockerfile" "${APP_DIR}"
+      - docker build -t "${ECR_REPO_URI}:${IMAGE_TAG}" -f "${APP_DIR}/Dockerfile" .
   post_build:
     commands:
       - docker push "${ECR_REPO_URI}:${IMAGE_TAG}"
