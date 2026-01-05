@@ -1,0 +1,383 @@
+openapi: 3.0.3
+info:
+  title: MSLO Inventory API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Item:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        status: { type: string }
+        standardCost: { type: number }
+    Warehouse:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        type: { type: string }
+        status: { type: string }
+    Movement:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        status: { type: string }
+        reference: { type: string, nullable: true }
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+              required: [email, password]
+      responses:
+        '200':
+          description: OK
+  /items:
+    get:
+      summary: List items
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create item
+      responses:
+        '201': { description: Created }
+  /items/{id}:
+    get:
+      summary: Get item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /categories:
+    get:
+      summary: List categories
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create category
+      responses:
+        '201': { description: Created }
+  /categories/{id}:
+    put:
+      summary: Update category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Deactivate category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /units:
+    get:
+      summary: List units of measure
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create unit of measure
+      responses:
+        '201': { description: Created }
+  /units/{id}:
+    put:
+      summary: Update unit of measure
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /warehouses:
+    get:
+      summary: List warehouses
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create warehouse
+      responses:
+        '201': { description: Created }
+  /warehouses/{id}:
+    get:
+      summary: Get warehouse
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update warehouse
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Deactivate warehouse
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /warehouses/{id}/locations:
+    get:
+      summary: List warehouse locations
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create warehouse location
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '201': { description: Created }
+  /warehouses/{id}/locations/{locationId}:
+    put:
+      summary: Update warehouse location
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: path
+          name: locationId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Deactivate warehouse location
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: path
+          name: locationId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /users:
+    get:
+      summary: List users
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create user
+      responses:
+        '201': { description: Created }
+  /users/{id}:
+    get:
+      summary: Get user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Deactivate user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /roles:
+    get:
+      summary: List roles
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create role
+      responses:
+        '201': { description: Created }
+  /roles/{id}:
+    get:
+      summary: Get role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Delete role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+  /movements:
+    get:
+      summary: List movements
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create movement
+      responses:
+        '201': { description: Created }
+  /movements/{id}:
+    get:
+      summary: Get movement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /movements/{id}/confirm:
+    post:
+      summary: Confirm movement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /movements/{id}/cancel:
+    post:
+      summary: Cancel movement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /stock:
+    get:
+      summary: Stock summary
+      responses:
+        '200': { description: OK }
+  /reports/stock:
+    get:
+      summary: Stock report
+      responses:
+        '200': { description: OK }
+  /reports/movements:
+    get:
+      summary: Movements report
+      responses:
+        '200': { description: OK }
+  /reports/rotation:
+    get:
+      summary: Stock rotation report
+      responses:
+        '200': { description: OK }
+  /reports/valuation:
+    get:
+      summary: Stock valuation report
+      responses:
+        '200': { description: OK }
+  /alerts:
+    get:
+      summary: List alerts
+      responses:
+        '200': { description: OK }
+  /alerts/compute:
+    post:
+      summary: Recompute alerts
+      responses:
+        '200': { description: OK }
+  /audit:
+    get:
+      summary: Audit log
+      responses:
+        '200': { description: OK }
+  /import/warehouses:
+    post:
+      summary: Import warehouses from CSV
+      responses:
+        '200': { description: OK }
+  /import/items:
+    post:
+      summary: Import items from CSV
+      responses:
+        '200': { description: OK }
+  /import/stock:
+    post:
+      summary: Import initial stock from CSV
+      responses:
+        '200': { description: OK }

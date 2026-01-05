@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    container_name: mslo-inventory-db
+    environment:
+      POSTGRES_DB: mslo_inventory
+      POSTGRES_USER: mslo
+      POSTGRES_PASSWORD: mslo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - mslo_inventory_data:/var/lib/postgresql/data
+volumes:
+  mslo_inventory_data:

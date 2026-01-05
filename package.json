@@ -1,0 +1,16 @@
+{
+  "name": "mslo-inventory",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm:dev --workspace apps/api\" \"npm:dev --workspace apps/web\"",
+    "build": "npm -w apps/api run build && npm -w apps/web run build",
+    "lint": "npm -w apps/api run lint && npm -w apps/web run lint",
+    "test": "npm -w apps/api run test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

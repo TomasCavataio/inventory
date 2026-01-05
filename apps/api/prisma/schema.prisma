@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WarehouseType {
+  CENTRAL
+  SATELLITE
+  OTHER
+}
+
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MovementType {
+  INGRESS
+  EGRESS
+  TRANSFER
+  ADJUSTMENT
+}
+
+enum MovementStatus {
+  DRAFT
+  CONFIRMED
+  CANCELED
+}
+
+enum AdjustmentDirection {
+  INCREASE
+  DECREASE
+}
+
+enum AlertType {
+  BELOW_MIN
+  BELOW_REORDER
+}
+
+enum Permission {
+  MANAGE_MASTER_DATA
+  VIEW_MASTER_DATA
+  CREATE_MOVEMENTS
+  APPROVE_MOVEMENTS
+  VIEW_REPORTS
+  VIEW_AUDIT
+  MANAGE_USERS
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  passwordHash   String
+  status         UserStatus      @default(ACTIVE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  roles          UserRole[]
+  warehouses     UserWarehouse[]
+  createdMovements Movement[]    @relation("createdMovements")
+  approvedMovements Movement[]   @relation("approvedMovements")
+  auditLogs      AuditLog[]
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model RolePermission {
+  roleId     String
+  permission Permission
+  role       Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permission])
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  assignedAt DateTime @default(now())
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Warehouse {
+  id        String        @id @default(uuid())
+  code      String        @unique
+  name      String
+  type      WarehouseType @default(CENTRAL)
+  address   String?
+  contact   String?
+  status    RecordStatus  @default(ACTIVE)
+  locations Location[]
+  stock     StockBalance[]
+  itemConfigs ItemWarehouseConfig[]
+  defaultItems Item[]
+  originMovements Movement[] @relation("originWarehouse")
+  destinationMovements Movement[] @relation("destinationWarehouse")
+  userWarehouses UserWarehouse[]
+  alerts    Alert[]
+}
+
+model Location {
+  id          String       @id @default(uuid())
+  warehouseId String
+  code        String
+  name        String
+  status      RecordStatus @default(ACTIVE)
+  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  stock       StockBalance[]
+  originMovements Movement[] @relation("originLocation")
+  destinationMovements Movement[] @relation("destinationLocation")
+
+  @@unique([warehouseId, code])
+}
+
+model Category {
+  id        String       @id @default(uuid())
+  name      String
+  parentId  String?
+  status    RecordStatus @default(ACTIVE)
+  parent    Category?    @relation("CategoryParent", fields: [parentId], references: [id])
+  children  Category[]   @relation("CategoryParent")
+  items     Item[]
+
+  @@unique([parentId, name])
+}
+
+model UnitOfMeasure {
+  id    String @id @default(uuid())
+  code  String @unique
+  name  String
+  items Item[]
+}
+
+model Item {
+  id                 String       @id @default(uuid())
+  code               String       @unique
+  name               String
+  description        String?
+  categoryId         String?
+  unitId             String
+  defaultWarehouseId String?
+  status             ItemStatus   @default(ACTIVE)
+  standardCost       Decimal      @db.Decimal(18,2)
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  category           Category?    @relation(fields: [categoryId], references: [id])
+  unit               UnitOfMeasure @relation(fields: [unitId], references: [id])
+  defaultWarehouse   Warehouse?   @relation(fields: [defaultWarehouseId], references: [id])
+  movementLines      MovementLine[]
+  stock              StockBalance[]
+  itemConfigs        ItemWarehouseConfig[]
+  alerts             Alert[]
+}
+
+model ItemWarehouseConfig {
+  id           String    @id @default(uuid())
+  itemId       String
+  warehouseId  String
+  minStock     Decimal   @db.Decimal(18,3)
+  reorderPoint Decimal   @db.Decimal(18,3)
+  item         Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, warehouseId])
+}
+
+model StockBalance {
+  id          String     @id @default(uuid())
+  itemId      String
+  warehouseId String
+  locationId  String?
+  quantity    Decimal    @db.Decimal(18,3)
+  updatedAt   DateTime   @updatedAt
+  item        Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  location    Location?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@unique([itemId, warehouseId, locationId])
+}
+
+model Movement {
+  id                  String            @id @default(uuid())
+  code                String?           @unique
+  type                MovementType
+  status              MovementStatus    @default(DRAFT)
+  adjustmentDirection AdjustmentDirection?
+  originWarehouseId   String?
+  originLocationId    String?
+  destinationWarehouseId String?
+  destinationLocationId  String?
+  reference           String?
+  reason              String?
+  createdById         String
+  approvedById        String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  confirmedAt         DateTime?
+  canceledAt          DateTime?
+  createdBy           User              @relation("createdMovements", fields: [createdById], references: [id])
+  approvedBy          User?             @relation("approvedMovements", fields: [approvedById], references: [id])
+  originWarehouse     Warehouse?        @relation("originWarehouse", fields: [originWarehouseId], references: [id])
+  destinationWarehouse Warehouse?       @relation("destinationWarehouse", fields: [destinationWarehouseId], references: [id])
+  originLocation      Location?         @relation("originLocation", fields: [originLocationId], references: [id])
+  destinationLocation Location?         @relation("destinationLocation", fields: [destinationLocationId], references: [id])
+  lines               MovementLine[]
+}
+
+model MovementLine {
+  id          String   @id @default(uuid())
+  movementId  String
+  itemId      String
+  quantity    Decimal  @db.Decimal(18,3)
+  unitCost    Decimal? @db.Decimal(18,2)
+  totalCost   Decimal? @db.Decimal(18,2)
+  notes       String?
+  movement    Movement @relation(fields: [movementId], references: [id], onDelete: Cascade)
+  item        Item     @relation(fields: [itemId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  dataBefore Json?
+  dataAfter  Json?
+  userId     String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+model Alert {
+  id           String    @id @default(uuid())
+  itemId       String
+  warehouseId  String
+  type         AlertType
+  quantity     Decimal   @db.Decimal(18,3)
+  minStock     Decimal   @db.Decimal(18,3)
+  reorderPoint Decimal   @db.Decimal(18,3)
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  item         Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@index([warehouseId, type])
+}
+
+model Config {
+  key   String @id
+  value String
+}
+
+model UserWarehouse {
+  userId      String
+  warehouseId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, warehouseId])
+}
