@@ -2,9 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import prisma from "../db/prisma";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { Permission } from "@prisma/client";
+import { Permission, UserStatus } from "@prisma/client";
 import { hashPassword } from "../auth/passwords";
 import { logAudit } from "../services/audit";
+import { parseEnum } from "../utils/enums";
 
 const router = Router();
 
@@ -31,9 +32,10 @@ const userSelect = {
 router.get("/", requireAuth, requirePermission(Permission.MANAGE_USERS), async (req, res, next) => {
   try {
     const { status } = req.query;
+    const statusFilter = parseEnum(UserStatus, status);
     const users = await prisma.user.findMany({
       where: {
-        status: typeof status === "string" ? status : undefined
+        status: statusFilter
       },
       select: userSelect,
       orderBy: { name: "asc" }

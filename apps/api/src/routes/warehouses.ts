@@ -2,8 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import prisma from "../db/prisma";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { Permission } from "@prisma/client";
+import { Permission, RecordStatus } from "@prisma/client";
 import { logAudit } from "../services/audit";
+import { parseEnum } from "../utils/enums";
 
 const router = Router();
 
@@ -26,9 +27,10 @@ const warehouseSchema = z.object({
 router.get("/", requireAuth, requirePermission(Permission.VIEW_MASTER_DATA), async (req, res, next) => {
   try {
     const { status } = req.query;
+    const statusFilter = parseEnum(RecordStatus, status);
     const warehouses = await prisma.warehouse.findMany({
       where: {
-        status: typeof status === "string" ? status : undefined
+        status: statusFilter
       },
       include: { locations: true },
       orderBy: { name: "asc" }

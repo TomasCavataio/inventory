@@ -2,9 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import prisma from "../db/prisma";
 import { requireAuth, requirePermission, requireWarehouseAccess } from "../middleware/auth";
-import { Permission, Prisma } from "@prisma/client";
+import { MovementStatus, MovementType, Permission, Prisma } from "@prisma/client";
 import { cancelMovement, confirmMovement, createMovement } from "../services/movementService";
 import { validateMovementInput } from "../services/stockEngine";
+import { parseEnum } from "../utils/enums";
 
 const router = Router();
 const userSelect = { id: true, name: true, email: true };
@@ -44,12 +45,14 @@ router.get("/", requireAuth, requirePermission(Permission.VIEW_REPORTS), async (
   try {
     const { type, status, warehouseId, itemId, createdById, from, to } = req.query;
     const andFilters: Prisma.MovementWhereInput[] = [];
+    const typeFilter = parseEnum(MovementType, type);
+    const statusFilter = parseEnum(MovementStatus, status);
 
-    if (typeof type === "string") {
-      andFilters.push({ type });
+    if (typeFilter) {
+      andFilters.push({ type: typeFilter });
     }
-    if (typeof status === "string") {
-      andFilters.push({ status });
+    if (statusFilter) {
+      andFilters.push({ status: statusFilter });
     }
     if (typeof createdById === "string") {
       andFilters.push({ createdById });

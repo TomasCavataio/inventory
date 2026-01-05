@@ -3,7 +3,7 @@ import express from "express";
 import { parse } from "csv-parse/sync";
 import prisma from "../db/prisma";
 import { requireAuth, requirePermission } from "../middleware/auth";
-import { Permission } from "@prisma/client";
+import { ItemStatus, Permission, RecordStatus, WarehouseType } from "@prisma/client";
 
 const router = Router();
 
@@ -32,23 +32,31 @@ function parseCsv(body: unknown) {
   }) as Record<string, string>[];
 }
 
-function normalizeStatus(value?: string | null) {
+function normalizeRecordStatus(value?: string | null): RecordStatus {
   const normalized = value?.trim().toUpperCase();
-  if (normalized === "INACTIVE") {
-    return "INACTIVE";
+  if (normalized === RecordStatus.INACTIVE) {
+    return RecordStatus.INACTIVE;
   }
-  return "ACTIVE";
+  return RecordStatus.ACTIVE;
 }
 
-function normalizeWarehouseType(value?: string | null) {
+function normalizeItemStatus(value?: string | null): ItemStatus {
   const normalized = value?.trim().toUpperCase();
-  if (normalized === "SATELLITE") {
-    return "SATELLITE";
+  if (normalized === ItemStatus.INACTIVE) {
+    return ItemStatus.INACTIVE;
   }
-  if (normalized === "OTHER") {
-    return "OTHER";
+  return ItemStatus.ACTIVE;
+}
+
+function normalizeWarehouseType(value?: string | null): WarehouseType {
+  const normalized = value?.trim().toUpperCase();
+  if (normalized === WarehouseType.SATELLITE) {
+    return WarehouseType.SATELLITE;
   }
-  return "CENTRAL";
+  if (normalized === WarehouseType.OTHER) {
+    return WarehouseType.OTHER;
+  }
+  return WarehouseType.CENTRAL;
 }
 
 router.post("/warehouses", requireAuth, requirePermission(Permission.MANAGE_MASTER_DATA), async (req, res, next) => {
@@ -75,7 +83,7 @@ router.post("/warehouses", requireAuth, requirePermission(Permission.MANAGE_MAST
         type: normalizeWarehouseType(record.type),
         address: record.address?.trim() || null,
         contact: record.contact?.trim() || null,
-        status: normalizeStatus(record.status)
+        status: normalizeRecordStatus(record.status)
       };
 
       const existing = await prisma.warehouse.findUnique({ where: { code } });
@@ -133,7 +141,7 @@ router.post("/items", requireAuth, requirePermission(Permission.MANAGE_MASTER_DA
           categoryId = existingCategory.id;
         } else {
           const createdCategory = await prisma.category.create({
-            data: { name: categoryName, status: "ACTIVE" }
+            data: { name: categoryName, status: RecordStatus.ACTIVE }
           });
           categoryId = createdCategory.id;
         }
@@ -155,7 +163,7 @@ router.post("/items", requireAuth, requirePermission(Permission.MANAGE_MASTER_DA
         name,
         description: record.description?.trim() || null,
         notes: record.notes?.trim() || null,
-        status: normalizeStatus(record.status),
+        status: normalizeItemStatus(record.status),
         standardCost: Number.isNaN(standardCost) ? 0 : standardCost,
         unitId: unit.id,
         categoryId,
@@ -252,7 +260,7 @@ router.post("/stock", requireAuth, requirePermission(Permission.MANAGE_MASTER_DA
               warehouseId: warehouse.id,
               code: locationCode,
               name: record.locationName?.trim() || locationCode,
-              status: "ACTIVE"
+              status: RecordStatus.ACTIVE
             }
           });
           locationId = createdLocation.id;
@@ -262,13 +270,11 @@ router.post("/stock", requireAuth, requirePermission(Permission.MANAGE_MASTER_DA
       const quantity = Number(record.quantity ?? 0);
       const normalizedQuantity = Number.isNaN(quantity) ? 0 : quantity;
 
-      const existing = await prisma.stockBalance.findUnique({
+      const existing = await prisma.stockBalance.findFirst({
         where: {
-          itemId_warehouseId_locationId: {
-            itemId: item.id,
-            warehouseId: warehouse.id,
-            locationId
-          }
+          itemId: item.id,
+          warehouseId: warehouse.id,
+          locationId
         }
       });
 

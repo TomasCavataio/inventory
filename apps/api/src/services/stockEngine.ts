@@ -121,13 +121,11 @@ export async function applyStockDeltas(tx: Prisma.TransactionClient, deltas: Sto
   const allowNegative = config.allowNegativeStock;
 
   for (const delta of deltas) {
-    const existing = await tx.stockBalance.findUnique({
+    const existing = await tx.stockBalance.findFirst({
       where: {
-        itemId_warehouseId_locationId: {
-          itemId: delta.itemId,
-          warehouseId: delta.warehouseId,
-          locationId: delta.locationId ?? null
-        }
+        itemId: delta.itemId,
+        warehouseId: delta.warehouseId,
+        locationId: delta.locationId ?? null
       }
     });
 

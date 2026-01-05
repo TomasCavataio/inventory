@@ -1,7 +1,8 @@
 import { Router } from "express";
 import prisma from "../db/prisma";
 import { requireAuth, requirePermission, requireWarehouseAccess } from "../middleware/auth";
-import { Permission, Prisma } from "@prisma/client";
+import { MovementStatus, MovementType, Permission, Prisma } from "@prisma/client";
+import { parseEnum } from "../utils/enums";
 
 const router = Router();
 const userSelect = { id: true, name: true, email: true };
@@ -66,12 +67,14 @@ router.get("/movements", requireAuth, requirePermission(Permission.VIEW_REPORTS)
   try {
     const { type, status, warehouseId, itemId, createdById, from, to } = req.query;
     const andFilters: Prisma.MovementWhereInput[] = [];
+    const typeFilter = parseEnum(MovementType, type);
+    const statusFilter = parseEnum(MovementStatus, status);
 
-    if (typeof type === "string") {
-      andFilters.push({ type });
+    if (typeFilter) {
+      andFilters.push({ type: typeFilter });
     }
-    if (typeof status === "string") {
-      andFilters.push({ status });
+    if (statusFilter) {
+      andFilters.push({ status: statusFilter });
     }
     if (typeof createdById === "string") {
       andFilters.push({ createdById });
@@ -132,8 +135,8 @@ router.get("/rotation", requireAuth, requirePermission(Permission.VIEW_REPORTS),
       by: ["itemId"],
       where: {
         movement: {
-          type: "EGRESS",
-          status: "CONFIRMED",
+          type: MovementType.EGRESS,
+          status: MovementStatus.CONFIRMED,
           createdAt: {
             gte: startDate,
             lte: endDate
